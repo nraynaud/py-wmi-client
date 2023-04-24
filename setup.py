@@ -18,8 +18,6 @@ setup(name='wmic',
       include_package_data=True,
       install_requires=[
           'natsort',
-          'pyasn1',
-          'pycrypto',
           'impacket',
       ],
       scripts=[os.path.join('scripts', 'wmic')]

@@ -10,9 +10,9 @@
 import argparse
 import re
 import sys
-import ConfigParser
-import StringIO
+import configparser
 
+from impacket.dcerpc.v5.rpcrt import DCERPCException
 from natsort import natsorted, ns
 from impacket.dcerpc.v5.dtypes import NULL
 from impacket.dcerpc.v5.dcom import wmi
@@ -81,13 +81,13 @@ class WmiClient(object):
         while True:
             try:
                 classObject = queryObject.Next(0xffffffff, 1)[0]
-                print 'CLASS: %s' % classObject.getClassName()
+                print('CLASS: %s' % classObject.getClassName())
                 record = classObject.getProperties()
                 keys = []
                 for name in record:
                     keys.append(name.strip())
                 keys = natsorted(keys, alg=ns.IGNORECASE)
-                print delimiter.join(keys)
+                print(delimiter.join(keys))
                 tmp = []
                 for key in keys:
                     if key == 'MUILanguages':
@@ -105,8 +105,8 @@ class WmiClient(object):
                     else:
                         tmp.append('%s' % self.format_value(record[key]['value'], record[key]['qualifiers']['CIMTYPE'],
                                                             record[key]['type']))
-                print delimiter.join(tmp)
-            except Exception, e:
+                print(delimiter.join(tmp))
+            except DCERPCException as e:
                 if e.get_error_code() != wmi.WBEMSTATUS.WBEM_S_FALSE:
                     raise
                 else:
@@ -123,7 +123,6 @@ class WmiClient(object):
         namespace = '//./root/cimv2'
         delimiter = '|'
         conn = None
-        classObject = None
         wmiService = None
         wmiLogin = None
 
@@ -147,16 +146,14 @@ class WmiClient(object):
 
             wmiService.RemRelease()
             conn.disconnect()
-        except Exception, e:
-            if classObject is not None:
-                classObject.RemRelease()
+        except DCERPCException as e:
             if wmiLogin is not None:
                 wmiLogin.RemRelease()
             if wmiService is not None:
                 wmiService.RemRelease()
             if conn is not None:
                 conn.disconnect()
-            raise Exception("Could not connect to %s: %s" % (self.host, e.message))
+            raise Exception("Could not connect to %s: %s" % (self.host, e))
 
 
 if __name__ == '__main__':
@@ -177,8 +174,8 @@ if __name__ == '__main__':
     }
     if options.authfile is not None:
         authfile = '[root]\n' + open(options.authfile, 'r').read()
-        config = ConfigParser.SafeConfigParser()
-        config.readfp(StringIO.StringIO(authfile))
+        config = configparser.ConfigParser()
+        config.read_string(authfile)
         auth['domain'] = config.get('root', 'domain')
         auth['username'] = config.get('root', 'username')
         auth['password'] = config.get('root', 'password')
@@ -186,7 +183,7 @@ if __name__ == '__main__':
         auth['domain'], auth['username'], auth['password'] = re.compile(
             '(?:(?:([^/\\\\%]*)[/\\\\])?([^%]*))(?:%(.*))?').match(options.user).groups('')
     else:
-        print "Missing user information"
+        print("Missing user information")
         sys.exit(1)
 
     if auth['domain'] == '':
